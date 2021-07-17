@@ -1,2 +1,2 @@
-#stroll
+# stroll
 Stroll is a purely system tray based application that joins zoom links automatically from a user's Google calendar. The application does not launch meetings through the browser, it joins meetings directly through the zoom executable on the system.
