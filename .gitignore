@@ -1,4 +1,13 @@
-env/
 __pycache__/
 .vscode/
+
+# Development leftovers
 data/token.json
+venv/
+env/
+
+# Ignore pyinstaller things
+build/
+dist/
+hooks/
+*.spec
