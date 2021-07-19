@@ -10,4 +10,3 @@ env/
 build/
 dist/
 hooks/
-*.spec
