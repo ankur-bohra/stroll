@@ -2,11 +2,10 @@ import os
 import re
 from datetime import datetime, timedelta
 
-from google.api_core.datetime_helpers import from_rfc3339
+from infi.systray import SysTrayIcon
 
 import api
 from scheduler import Scheduler
-from infi.systray import SysTrayIcon
 
 ICON = "images/stroll.ico"
 SCOPES = [
