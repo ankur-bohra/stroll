@@ -41,7 +41,7 @@ def get_next_event():
                 events.append(event)
     
     # NOTE: Timezone conversion isn't required here (constant offset)
-    events.sort(key = lambda event: datetime.fromisoformat(event.get("start").get("dateTime")))
+    events.sort(key = lambda event: datetime.fromisoformat(event.get("start").get("dateTime")), reverse=True)
     return len(events) > 0 and events.pop() or None
 
 def join_event(event):
