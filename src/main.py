@@ -101,22 +101,35 @@ def auto_sync(sync_origin=None):
         next_call = now + SYNC_FREQUENCY
         scheduler.add_task(next_call, lambda: auto_sync(sync_origin))
 
+def stop_joining():
+    global current_sync_origin, scheduler
+    current_sync_origin = datetime.now().astimezone()
+    scheduler.clear()  # Clear previously scheduled events
+
 DEFAULT_INDEX = 1  # Join next event when tray icon is double clicked
 menu = (
     ("Link New Account", None, link_account),
+    ("---SEPARATOR---", None, "PASS"),
+    ("Sync Next Event", None, auto_sync),
     ("Join Next Event", None, join_next_event),
-    ("Change Pre-join Offset", None, (
+    ("---SEPARATOR---", None, "PASS"),
+    ("Toggle Auto-Joining", None, (
+        ("Enable Joining", None, auto_sync),
+        ("Disable Joining", None, stop_joining)
+    )),
+    ("Options", None, (
+        ("Change Joining Offset", None, (
             ("Join 30 seconds before", None, lambda i: modify_prejoin_offset(30)),
             ("Join 1 minute before", None, lambda i: modify_prejoin_offset(1*60)),
             ("Join 5 minutes before", None, lambda i: modify_prejoin_offset(5*60)),
-        )
-    ),
-    ("Change Syncing Frequency", None, (
-            ("Sync once each minute", None, lambda i: modify_sync_frequency(1*60)),
-            ("Sync once every 5 minutes", None, lambda i: modify_sync_frequency(5*60)),
-            ("Sync once every 10 minutes", None, lambda i: modify_sync_frequency(10*60)),
-        )
-    ),
+        )),
+        ("Change Syncing Frequency", None, (
+                ("Sync once each minute", None, lambda i: modify_sync_frequency(1*60)),
+                ("Sync once every 5 minutes", None, lambda i: modify_sync_frequency(5*60)),
+                ("Sync once every 10 minutes", None, lambda i: modify_sync_frequency(10*60)),
+            )
+        ),  
+    ))
 )
 
 
