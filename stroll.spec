@@ -4,6 +4,7 @@ block_cipher = None
 datas = [
     ('images', 'images'),
     ('data', 'data'),
+    ('settings.toml', 'settings.toml')
 ]
 
 a = Analysis(['src\\stroll.py'],

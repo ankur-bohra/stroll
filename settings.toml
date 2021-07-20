@@ -1,0 +1,20 @@
+[General]
+start-on-startup = true
+show-splashscreen = true
+
+
+[Joining]
+# Whether meetings should be joined automatically
+auto-join = true
+# How early the meeting should be joined from its actual time
+offset = 30  # seconds
+# The path to the zoom executable. The default path is %appdata%/Zoom/bin/zoom.exe 
+zoom-path = "%appdata%/Zoom/bin/zoom.exe"
+
+
+[Syncing]
+# How long to wait before syncing/scheduling again.
+period = 600 # Seconds
+# Which calendar(s) to sync from.
+calendars = ["*"]  # Name of each calendar. "*" means all calendars.
+

@@ -1,5 +1,6 @@
 import os
 import re
+import toml
 from datetime import datetime, timedelta
 
 from infi.systray import SysTrayIcon
@@ -15,11 +16,9 @@ SCOPES = [
 ]
 REGEXP = r'(\d+)\?pwd=(\w+)'
 
-SYNC_FREQUENCY = timedelta(seconds=10*60)
-PREJOIN_OFFSET = timedelta(seconds=20)
+settings = {}
 
 scheduler = Scheduler()
-scheduler.start()
 
 def link_account(sysTrayIcon):
     global SCOPES
@@ -27,7 +26,7 @@ def link_account(sysTrayIcon):
     auto_sync()
 
 def get_next_event():
-    global next_event, PREJOIN_OFFSET
+    global next_event
 
     events = []
     calendar_list = api.get_calendar_list()
@@ -44,11 +43,11 @@ def get_next_event():
     return len(events) > 0 and events.pop() or None
 
 def join_event(event):
-    global REGEXP
+    global REGEXP, settings
     description = event.get("description")
     pattern = re.search(REGEXP, description)
     url = f"zoommtg://zoom.us/join?action=join&confno={pattern.group(1)}&pwd={pattern.group(2)}"
-    command = f"%appdata%/Zoom/bin/zoom.exe --url=\"{url}\""
+    command = f"{settings.get('Joining').get('zoom-path')} --url=\"{url}\""
     os.popen(command)
 
 def join_next_event(sysTrayIcon):
@@ -57,24 +56,29 @@ def join_next_event(sysTrayIcon):
         join_event(event)
 
 def schedule_next_event():
-    global PREJOIN_OFFSET
+    global settings
     event = get_next_event()
     if event:
         startTime = datetime.fromisoformat(event.get("start").get("dateTime"))
-        joinTime = startTime - PREJOIN_OFFSET
+        joinTime = startTime - timedelta(seconds=settings.get("Joining").get("offset"))
         scheduler.add_task(joinTime, lambda: join_event(event))
 
-def modify_prejoin_offset(seconds):
-    global PREJOIN_OFFSET
-    PREJOIN_OFFSET = timedelta(seconds=seconds)
-    # Start a new sync cycle
-    auto_sync()
+def load_settings():
+    global settings
+    settings = toml.load("settings.toml")
+    auto_sync()  # Just in case some joining/syncing settings have been changed
 
-def modify_sync_frequency(seconds):
-    global SYNC_FREQUENCY
-    SYNC_FREQUENCY = seconds
-    # Start a new sync cycle
-    auto_sync()
+def modify_settings(field, value):
+    global settings
+    keys = field.split(".")[::-1]
+    cursor = settings
+    while len(keys) > 1:  # The last part is the actual key, the one before that is the last dictionary
+        key = keys.pop()
+        cursor = cursor.get(key)
+    cursor[keys.pop()] = value
+    with open("settings.toml", "w") as settings_file:
+        toml.dump(settings, settings_file)
+    load_settings()  # Handle all updates
 
 def on_quit(sysTrayIcon):
     global scheduler
@@ -82,7 +86,11 @@ def on_quit(sysTrayIcon):
 
 current_sync_origin = datetime.now()
 def auto_sync(sync_origin=None):
-    global scheduler, SYNC_FREQUENCY, current_sync_origin
+    global scheduler, current_sync_origin, settings
+
+    if settings.get("Joining").get("auto-join") == False:
+        return
+
     now = datetime.now().astimezone()
     # Update current sync origin if this is a new sync loop
     if sync_origin == None:
@@ -97,7 +105,7 @@ def auto_sync(sync_origin=None):
     if os.path.exists("data/token.json"):
         scheduler.clear()
         schedule_next_event()
-        next_call = now + SYNC_FREQUENCY
+        next_call = now + timedelta(seconds=settings.get("Syncing").get("period"))
         scheduler.add_task(next_call, lambda: auto_sync(sync_origin))
 
 def stop_joining():
@@ -108,31 +116,23 @@ def stop_joining():
 DEFAULT_INDEX = 1  # Join next event when tray icon is double clicked
 menu = (
     ("Link New Account", None, link_account),
-    ("---SEPARATOR---", None, "PASS"),
+    ("<SEPARATOR>", None, lambda i: None),
     ("Sync Next Event", None, auto_sync),
     ("Join Next Event", None, join_next_event),
-    ("---SEPARATOR---", None, "PASS"),
-    ("Toggle Auto-Joining", None, (
-        ("Enable Joining", None, auto_sync),
-        ("Disable Joining", None, stop_joining)
+    ("<SEPARATOR>", None,  lambda i: None),
+    ("Auto-Joining", None, (
+        ("Enable Joining", None, lambda i: modify_settings("Joining.auto-join", True)),
+        ("Disable Joining", None, lambda i: modify_settings("Joining.auto-join", False))
     )),
-    ("Options", None, (
-        ("Change Joining Offset", None, (
-            ("Join 30 seconds before", None, lambda i: modify_prejoin_offset(30)),
-            ("Join 1 minute before", None, lambda i: modify_prejoin_offset(1*60)),
-            ("Join 5 minutes before", None, lambda i: modify_prejoin_offset(5*60)),
-        )),
-        ("Change Syncing Frequency", None, (
-                ("Sync once each minute", None, lambda i: modify_sync_frequency(1*60)),
-                ("Sync once every 5 minutes", None, lambda i: modify_sync_frequency(5*60)),
-                ("Sync once every 10 minutes", None, lambda i: modify_sync_frequency(10*60)),
-            )
-        ),  
+    ("Settings", None, (
+        ("Open Settings File", None, lambda i: os.popen(os.path.join(os.getcwd(), "settings.toml"))),
+        ("Reload Settings", None, load_settings)
     ))
 )
 
 
-auto_sync()  # Non user-initiated syncing
-os.popen("%appdata%/Zoom/bin/zoom.exe")  # Zoom start-up and login shouldn't affect prejoin period
+scheduler.start()
+load_settings()  # Also starts the initial sync loop
+os.popen(settings.get("Joining").get("zoom-path"))  # Zoom start-up and login shouldn't affect prejoin period
 systray = SysTrayIcon(ICON, "Stroll", menu, on_quit, DEFAULT_INDEX)
 systray.start()
