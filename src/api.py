@@ -11,7 +11,9 @@ from googleapiclient.discovery import build, Resource
 scopes = [
     "https://www.googleapis.com/auth/calendar.readonly",
     "https://www.googleapis.com/auth/calendar.events.readonly",
-    "https://www.googleapis.com/auth/calendar.events"
+    "https://www.googleapis.com/auth/calendar.events",
+    "https://www.googleapis.com/auth/userinfo.email",
+    "openid"
 ]
 
 def get_creds(scopes: Sequence[str], data_folder: str = "data",
@@ -196,6 +198,7 @@ def get_events_starting_from_now(calendar_id: Union[str, List[str]], range_offse
     events = get_events_in_time_span(calendar_id, time_from, time_to, allow_incomplete_overlaps=True, filter=["+Inside", "+OverEnd"])
     return events
 
-
-if __name__ == "__main__":
-    print(get_calendar_list())
+def get_user_info(credentials):
+    user_info_service = build('oauth2', 'v2', credentials=credentials)
+    user_info = user_info_service.userinfo().get().execute()
+    return user_info
