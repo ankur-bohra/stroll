@@ -93,14 +93,14 @@ def get_calendar_from_name(calendar_name: str) -> Optional[Dict]:
             return calendar
 
 def get_events_in_time_span(calendar_id: str, time_from: datetime, time_to: datetime,
-                                allow_incomplete_overlaps: bool = False, filter: List[str]=[]) -> List[Dict]:
+                            allow_incomplete_overlaps: bool = False, filters: List[str] = ["+Inside", "+OverStart", "+OverEnd", "+Across"]) -> List[Dict]:
     '''Get events partially and/or completely inside a time span from the given calendar.
     Args:
         calendar_id: calendarId of the calendar to search.
         time_from: The start of the time span (inclusve).
         time_to: The end of the time span (exclusive).
         allow_incomplete_overlaps: Whether to include events not completely inside the time span. Defaults to false. 
-        filter: The type events to filter in or filter out, where type is "Inside", "OverStart", "OverEnd" or "Across"
+        filters: The type events to filter in or filter out, where type is "Inside", "OverStart", "OverEnd" or "Across"
             To filter IN a type, prepend the type with +, to filter OUT a type, prepend the type with -.
             Application of one filter makes other types of filters (+/-) redundant. The first filter in the list
             determines the filter applied.
@@ -127,7 +127,7 @@ def get_events_in_time_span(calendar_id: str, time_from: datetime, time_to: date
         timeMin=time_from.isoformat(), timeMax=time_to.isoformat(),
         singleEvents=True, orderBy="startTime" # startTime order requires singleEvents to be True
     ).execute()["items"]
-    events_chosen = [] # "Sink" for events passing filter
+    events_chosen = []  # "Sink" for events passing filter
     for event in events_overlapping_in_span:
         event_start = event["start"]["dateTime"]
         event_end = event["end"]["dateTime"]
@@ -154,11 +154,28 @@ def get_events_in_time_span(calendar_id: str, time_from: datetime, time_to: date
                 event["overlapType"] = "Across"
         # else:
             # No overlapType assigned as only Inside is allowed and event wasn't inside
-        
+
         if "overlapType" in event: # Event passed appropriate filter
             events_chosen.append(event)
 
-    return events_chosen
+    type_filters = {}
+    for filter in filters:
+        if filter in type_filters:
+            # Filter already applied
+            continue
+        if filter[0] == "-":
+            filter = filter[1:]
+            type_filters[filter] = False
+        elif filter[0] == "+":
+            filter = filter[1:]
+            type_filters[filter] = True
+    
+    events_passed = []
+    for event in events_chosen:
+        if type_filters.get(event["overlapType"]):
+            events_passed.append(event)
+        
+    return events_passed
 
 def get_events_starting_from_now(calendar_id: Union[str, List[str]], range_offset: timedelta = timedelta(minutes=1),) ->  List[Dict]:
     '''Get events starting from the time the function is called upto an offset.
