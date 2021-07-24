@@ -156,7 +156,7 @@ def init(tray_icon):
     global scheduler, data, settings, data
     # Indicate startup
     tray_icon.visible = True
-    tray_icon.notify("Stroll is starting up")
+    tray_icon.notify("Stroll has started")
 
     # Handle data files
     settings.load()
@@ -165,7 +165,6 @@ def init(tray_icon):
     # Initialize first sync loop
     scheduler.start()
     auto_sync()
-    tray_icon.remove_notification()
 
 def stop(tray_icon):
     global scheduler, data, settings, data
