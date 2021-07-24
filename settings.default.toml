@@ -4,9 +4,12 @@ start-on-startup = true
 [Joining]
 auto-join = true
 offset = 30
-join-old-events = false
+join-old-events = true
 zoom-path = "%appdata%/Zoom/bin/zoom.exe"
 
 [Syncing]
 period = 600
-calendars = [ "*",]
+calendars = [ "*"]
+
+[Settings]
+open-in-notepad = true

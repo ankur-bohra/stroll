@@ -3,6 +3,8 @@ __pycache__/
 
 # Development leftovers
 data/token.json
+data/data.user.json
+settings.user.toml
 venv/
 env/
 

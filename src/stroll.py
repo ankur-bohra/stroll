@@ -5,7 +5,7 @@ from PIL import Image
 from pystray import Icon, Menu, MenuItem as Item
 
 import api
-from data import Settings, SessionData
+from data import TomlFile, JsonFile
 from scheduler import Scheduler
 
 ICON = Image.open("images\\stroll.ico")
@@ -19,8 +19,8 @@ SCOPES = [
 REGEXP = r'(\d+)\?pwd=(\w+)'
 
 scheduler = Scheduler()
-settings = Settings()
-data = SessionData()
+settings = TomlFile("settings.user.toml", "settings.default.toml")
+data = JsonFile("data\\data.user.json", "data\\data.default.json")
 
 def link_account(sysTrayIcon):
     creds = api.get_creds(SCOPES, show_auth_prompt=False, reuse_creds=False)
@@ -43,7 +43,6 @@ def get_next_event():
         for event in possible_events:            
             if event.get("description") and bool(re.search(REGEXP, event.get("description"))):
                 events.append(event)
-    
     # NOTE: Timezone conversion isn't required here (constant offset)
     events.sort(key = lambda event: datetime.fromisoformat(event.get("start").get("dateTime")), reverse=True)
 
@@ -130,7 +129,9 @@ def get_menu_items():
     menu_items.append(Item("Sync Next Event", lambda tray_icon: auto_sync()))
 
     menu_items.append(Menu.SEPARATOR)
-    menu_items.append(Item("Open Settings File", lambda tray_icon: os.popen(f"{settings.get('Settings.path')}")))
+    menu_items.append(Item("Open Settings File", lambda tray_icon: os.popen(
+        "notepad settings.user.toml" if settings.get("Settings.open-in-notepad") else "settings.user.toml")
+    ))
     menu_items.append(Item("Load Settings", lambda tray_icon: settings.load()))
 
     menu_items.append(Menu.SEPARATOR)
