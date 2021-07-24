@@ -46,7 +46,15 @@ def get_next_event():
     
     # NOTE: Timezone conversion isn't required here (constant offset)
     events.sort(key = lambda event: datetime.fromisoformat(event.get("start").get("dateTime")), reverse=True)
-    print([(event.get("summary"), event.get("start").get("dateTime"), event.get("overlapType")) for event in events])
+
+    # Since this and link_account are the only functions that interact with the API, this is the ideal
+    # place to update the email id from the crendetials
+    if data.get("email") is None:
+        creds = api.get_creds(SCOPES)  # This will reuse the credits that should exist after the calls above
+        user_info = api.get_user_info(creds)
+        if user_info:
+            data.set("email", user_info.get("email"))
+            tray_icon.update_menu()
     return len(events) > 0 and events.pop() or None
 
 def join_event(event):
