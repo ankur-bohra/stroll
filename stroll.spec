@@ -3,12 +3,13 @@ block_cipher = None
 
 datas = [
     ('images', 'images'),
-    ('data', 'data'),
+    ('data\\client_secret.json', 'data'),
+    ('data\\data.default.json', 'data'),
     ('settings.default.toml', '.')
 ]
 
 a = Analysis(['src\\stroll.py'],
-             pathex=[],
+             pathex=[], 
              binaries=[],
              datas=datas,
              hiddenimports=["pystray._win32"],
