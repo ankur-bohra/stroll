@@ -54,7 +54,7 @@ def get_next_event():
             continue
 
         calendar_id = calendar.get("id")
-        range_to_sync = convert_time_to_timedelta(settings.get("Joining.range-to-sync"))
+        range_to_sync = convert_time_to_timedelta(settings.get("Syncing.range-to-sync"))
         possible_events = api.get_events_starting_from_now(calendar_id, range_offset=range_to_sync)  # Random offset
         # Store only zoom link containing events 
         for event in possible_events:            
@@ -78,7 +78,8 @@ def join_event(event):
     description = event.get("description")
     pattern = re.search(REGEXP, description)
     url = f"zoommtg://zoom.us/join?action=join&confno={pattern.group(1)}&pwd={pattern.group(2)}"
-    command = f"{settings.get('Joining.zoom-path')} --url=\"{url}\""
+    zoom_path = settings.get("Joining.zoom-path")
+    command = f"{zoom_path} --url=\"{url}\""  # NOTE: This blocks the containing directory from deletion as a side effect
     os.popen(command)
 
 def join_next_event():
