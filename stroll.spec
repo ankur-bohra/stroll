@@ -4,14 +4,14 @@ block_cipher = None
 datas = [
     ('images', 'images'),
     ('data', 'data'),
-    ('settings.toml', 'settings.toml')
+    ('settings.default.toml', '.')
 ]
 
 a = Analysis(['src\\stroll.py'],
              pathex=[],
              binaries=[],
              datas=datas,
-             hiddenimports=[],
+             hiddenimports=["pystray._win32"],
              hookspath=[],
              runtime_hooks=[],
              excludes=['altgraph', 'future', 'pefile', 'pyinstaller', 'pyinstaller-hooks-contrib', 'pywin32-ctypes'],
