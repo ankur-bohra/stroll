@@ -30,15 +30,32 @@ def link_account(sysTrayIcon):
         sysTrayIcon.update_menu()
     auto_sync() 
 
+def convert_time_to_timedelta(time):
+    if time is None:
+        return None
+    # associate time with a date to allow operations
+    start = datetime.min
+    end = datetime.combine(datetime.min, time)
+    td = end - start
+    return td
+
+
 def get_next_event():
     global next_event
 
     events = []
     calendar_list = api.get_calendar_list()
+    calendars_filter = settings.get("Syncing.calendars")
     for calendar in calendar_list:
-        calendar_id = calendar.get("id")
+        # Apply calendar filter from settings
+        if (calendar not in calendars_filter) and ("*" not in calendars_filter):
+            # calendar not specifically mentioned and the wildcard hasn't been applied
+            # skip this calendar
+            continue
 
-        possible_events = api.get_events_starting_from_now(calendar_id, range_offset=timedelta(days=1))  # Random offset
+        calendar_id = calendar.get("id")
+        range_to_sync = convert_time_to_timedelta(settings.get("Joining.range-to-sync"))
+        possible_events = api.get_events_starting_from_now(calendar_id, range_offset=range_to_sync)  # Random offset
         # Store only zoom link containing events 
         for event in possible_events:            
             if event.get("description") and bool(re.search(REGEXP, event.get("description"))):
@@ -78,7 +95,7 @@ def schedule_next_event():
             scheduler.clear()
             # Schedule the new event
             startTime = datetime.fromisoformat(event.get("start").get("dateTime"))
-            joinTime = startTime - timedelta(seconds=settings.get("Joining.offset"))
+            joinTime = startTime - convert_time_to_timedelta(settings.get("Joining.offset"))
             scheduler.add_task(joinTime, lambda: join_event(event))
             # Tell the user a new event has been scheduled
             name = event.get("summary")
@@ -107,7 +124,7 @@ def auto_sync(sync_origin=None):
     # Don't interact with api if no credentials are present at all
     if os.path.exists("data/token.json"):
         schedule_next_event()
-        next_call = now + timedelta(seconds=settings.get("Syncing.period"))
+        next_call = now + convert_time_to_timedelta(settings.get("Syncing.period"))
         scheduler.add_task(next_call, lambda: auto_sync(sync_origin))
 
 menu_items = []
@@ -174,7 +191,7 @@ def stop(tray_icon):
         scheduler.terminate()
     tray_icon.stop()
     
-os.popen(settings.get("Joining.zoom-path"))  # Zoom start-up and login shouldn't affect prejoin period
+os.popen(settings.get("General.zoom-path"))  # Zoom start-up and login shouldn't affect prejoin period
 tray_menu = Menu(*get_menu_items())
 tray_icon = Icon("Stroll", ICON, menu=tray_menu)
 tray_icon.run(init)

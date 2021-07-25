@@ -1,15 +1,16 @@
 [General]
 start-on-startup = true
+start-at-local-time = false
+zoom-path = "%appdata%/Zoom/bin/zoom.exe"
 
 [Joining]
 auto-join = true
-offset = 30
-join-old-events = true
-zoom-path = "%appdata%/Zoom/bin/zoom.exe"
+offset = 00:00:30
 
 [Syncing]
-period = 600
 calendars = [ "*"]
+period = 00:10:00
+range-to-sync = 00:15:00
 
 [Settings]
 open-in-notepad = true
