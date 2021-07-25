@@ -4,9 +4,9 @@ from datetime import datetime, timedelta
 from PIL import Image
 from pystray import Icon, Menu, MenuItem as Item
 
-import api
-from data import TomlFile, JsonFile
-from scheduler import Scheduler
+from util import api
+from util.data import TomlFile, JsonFile
+from util.scheduler import Scheduler
 
 ICON = Image.open("images\\stroll.ico")
 SCOPES = [
