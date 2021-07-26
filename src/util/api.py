@@ -9,6 +9,8 @@ from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build, Resource
 
+from util.path import from_root
+
 # API FUNCTIONS
 scopes = [
     "https://www.googleapis.com/auth/calendar.readonly",
@@ -19,7 +21,7 @@ scopes = [
 ]
 
 
-def get_creds(scopes: Sequence[str], data_folder: str = "data",
+def get_creds(scopes: Sequence[str], data_folder: str = from_root("data"),
               show_auth_prompt: bool = True, reuse_creds: bool = True) -> Type[Credentials]:
     """Get/create user credentials in given folder with specified scopes.
     Args:

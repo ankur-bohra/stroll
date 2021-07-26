@@ -6,9 +6,10 @@ from pystray import Icon, Menu, MenuItem as Item
 
 from util import api
 from util.data import TomlFile, JsonFile
+from util.path import from_root
 from util.scheduler import Scheduler
 
-ICON = Image.open("images\\stroll.ico")
+ICON = Image.open(from_root("images\\stroll.ico"))
 SCOPES = [
     "https://www.googleapis.com/auth/calendar.readonly",
     "https://www.googleapis.com/auth/calendar.events.readonly",
@@ -19,8 +20,8 @@ SCOPES = [
 REGEXP = r'(\d+)\?pwd=(\w+)'
 
 scheduler = Scheduler()
-settings = TomlFile("settings.user.toml", "settings.default.toml")
-data = JsonFile("data\\data.user.json", "data\\data.default.json")
+settings = TomlFile(from_root("settings.user.toml"), from_root("settings.default.toml"))
+data = JsonFile(from_root("data\\data.user.json"), from_root("data\\data.default.json"))
 
 def link_account(sysTrayIcon):
     creds = api.get_creds(SCOPES, show_auth_prompt=False, reuse_creds=False)
