@@ -16,6 +16,7 @@ class Scheduler:
     def __init__(self):
         self.head = None
         self.active = False
+        self.terminated = False
         self.timer = None
         pass
 
@@ -115,10 +116,11 @@ class Scheduler:
         self._handle_terminated()
         self.pause()
         self.daemon.cancel()
-        self.active = "TERMINATED"
+        self.active = False
+        self.terminated = True
 
     def _handle_terminated(self):
-        if self.active == "TERMINATED":
+        if self.terminated:
             raise Exception("Can not use terminated scheduler.")
 
     def pause(self, timeToLast=-1):
