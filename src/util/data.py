@@ -7,6 +7,10 @@ import toml
 settings = None
 session_data = None
 
+def merge_dicts(session_dict, file_dict):
+    copy = session_dict.copy()
+    copy.update(file_dict)  # File dict keys overwrite session dict keys
+    return copy
 
 class DataFileInterface:
     def __init__(self):
@@ -81,8 +85,12 @@ class TomlFile(DefaultingFile):
             self.load()  # Load in the new file
 
     def dump(self):
+        session_dict = self.cache
+        self.load()
+        file_dict = self.cache
+        merged = merge_dicts(session_dict, file_dict)
         with open(self.active_path, "w") as file:
-            toml.dump(self.cache, file)
+            toml.dump(merged, file)
 
 class JsonFile(DefaultingFile):
     def __init__(self, active_file_path, default_file_path=None):
@@ -107,5 +115,9 @@ class JsonFile(DefaultingFile):
             self.load()  # Load in the new file
 
     def dump(self):
+        session_dict = self.cache
+        self.load()
+        file_dict = self.cache
+        merged = merge_dicts(session_dict, file_dict)
         with open(self.active_path, "w") as file:
-            json.dump(self.cache, file)
+            json.dump(merged, file)
