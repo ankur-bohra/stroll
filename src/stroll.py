@@ -89,7 +89,9 @@ def join_next_event():
         join_event(event)
 
 def schedule_next_event():
-    global settings, tray_icon
+    global settings, tray_icon, scheduler
+    if not scheduler.active:
+        return
     event = get_next_event()
     if event:
         if not scheduler.head or event.get("id") != scheduler.head.value.get("id"):
@@ -109,8 +111,8 @@ def schedule_next_event():
 current_sync_origin = datetime.now()
 def auto_sync(sync_origin=None):
     global scheduler, current_sync_origin, settings
-    # Terminate if auto-join is disabled or the scheduler is terminated
-    if not settings.get("Joining.auto-join") or not scheduler.active:
+    # Terminate if auto-join is disabled
+    if not settings.get("Joining.auto-join"):
         return
 
     now = datetime.now().astimezone()
@@ -124,10 +126,11 @@ def auto_sync(sync_origin=None):
         return
     # All sync issues resolved, proceed to actual syncing
     # Don't interact with api if no credentials are present at all
-    if os.path.exists("data/token.json"):
+    if os.path.exists("data/token.json"):  # Don't proceed if scheduler is terminated or paused
         schedule_next_event()
         next_call = now + convert_time_to_timedelta(settings.get("Syncing.period"))
-        scheduler.add_task(next_call, lambda: auto_sync(sync_origin))
+        if scheduler.active:
+            scheduler.add_task(next_call, lambda: auto_sync(sync_origin))
 
 menu_items = []
 def get_menu_items():
