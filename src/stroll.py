@@ -1,6 +1,8 @@
 import os
 import re
-from datetime import datetime, timedelta
+import sys
+import win32com.client
+from datetime import datetime, time
 from PIL import Image
 from pystray import Icon, Menu, MenuItem as Item
 
@@ -22,6 +24,8 @@ REGEXP = r'(\d+)\?pwd=(\w+)'
 scheduler = Scheduler()
 settings = TomlFile(from_root("settings.user.toml"), from_root("settings.default.toml"))
 data = JsonFile(from_root("data\\data.user.json"), from_root("data\\data.default.json"))
+
+is_built = os.path.exists("Stroll.exe")
 
 def link_account(sysTrayIcon):
     creds = api.get_creds(SCOPES, show_auth_prompt=False, reuse_creds=False)
@@ -152,7 +156,7 @@ def get_menu_items():
 
     menu_items.append(Menu.SEPARATOR)
     menu_items.append(Item("Open Settings File", lambda tray_icon: os.popen(
-        "notepad settings.user.toml" if settings.get("Settings.open-in-notepad") else "settings.user.toml")
+        f"notepad {from_root('settings.user.toml')}" if settings.get("Settings.open-in-notepad") else from_root('settings.user.toml'))
     ))
     menu_items.append(Item("Load Settings", lambda tray_icon: settings.load()))
 
@@ -195,8 +199,47 @@ def stop(tray_icon):
     if scheduler.active:
         scheduler.terminate()
     tray_icon.stop()
-    
-os.popen(settings.get("General.zoom-path"))  # Zoom start-up and login shouldn't affect prejoin period
-tray_menu = Menu(*get_menu_items())
-tray_icon = Icon("Stroll", ICON, menu=tray_menu)
-tray_icon.run(init)
+
+tray_icon = None
+def start():
+    global tray_icon
+    os.popen(settings.get("General.zoom-path"))  # Zoom start-up and login shouldn't affect prejoin period
+    tray_menu = Menu(*get_menu_items())
+    tray_icon = Icon("Stroll", ICON, menu=tray_menu)
+    tray_icon.run(init)
+
+
+# DEVICE-STARTUP SHORTCUT
+# -------------------------------------------------------------------------------------------
+# Instead of adding/deleting the startup shortcut required, a startup shortcut is always present, and it always
+# invokes the main program, which decides whether or not to start the tray icon.
+# This may be a little confusing for the user since stroll.exe would show up as the startup shortcut
+startup_folder = os.path.expandvars("%appdata%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup")
+shortcut_path = os.path.join(startup_folder, "Stroll.lnk")
+if not os.path.exists(shortcut_path):
+    shell = win32com.client.Dispatch("WScript.Shell")
+    shortcut = shell.CreateShortCut(shortcut_path)
+    # The TargetPath is normally the executable itself but that causes a console to pop up when launched
+    # from a shortcut. Instead we use a bat file that invokes the main program and closes itself.
+    # First create the bat file
+    shortcut.TargetPath = from_root("launch.bat")
+    shortcut.Arguments = "--startup"
+    shortcut.WorkingDirectory = from_root("")
+    shortcut.IconLocation = from_root("images\\stroll.ico")
+    shortcut.WindowStyle = 7
+    shortcut.save()
+
+
+# STARTUP
+# -------------------------------------------------------------------------------------------
+is_device_startup = len(sys.argv) > 1 and sys.argv[1] == "--startup"
+autostart_type = settings.get("General.auto-start").lower()
+# Device startup and normal launch are the same case
+if (is_device_startup and autostart_type.lower() == "startup") or not is_device_startup:
+    # Either it was device startup and it was wanted, or it has been explicitly ran
+    start()
+# But if some time is specified, then actual startup has to be scheduled for the future
+elif is_device_startup and type(autostart_type) == time:
+    time_to_start = datetime.combine(datetime.today(), autostart_type)
+    scheduler.start()
+    scheduler.add_task(time_to_start, start)

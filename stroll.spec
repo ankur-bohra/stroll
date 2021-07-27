@@ -5,7 +5,8 @@ datas = [
     ('images', 'images'),
     ('data\\client_secret.json', 'data'),
     ('data\\data.default.json', 'data'),
-    ('settings.default.toml', '.')
+    ('settings.default.toml', '.'),
+    ('launch.bat', '.')
 ]
 
 a = Analysis(['src\\stroll.py'],
