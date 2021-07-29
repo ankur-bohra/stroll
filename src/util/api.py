@@ -1,13 +1,11 @@
-import httplib2
-import logging
 import os
-from typing import Sequence, Optional, List, Dict, Type, Union
-
 from datetime import datetime, timedelta
-from google.oauth2.credentials import Credentials
+from typing import Dict, List, Optional, Sequence, Type, Union
+
 from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build, Resource
+from googleapiclient.discovery import Resource, build
 
 from util.path import from_root
 
@@ -77,8 +75,6 @@ def get_service(reuse_creds: bool = True) -> Resource:
             scopes, data_folder=from_root("data"), show_auth_prompt=False, reuse_creds=reuse_creds)
         service = build("calendar", "v3", credentials=credentials)
     return service
-
-# Separate function because this will be needed in the selection UI
 
 
 def get_calendar_list() -> Resource:
@@ -188,13 +184,14 @@ def get_events_in_time_span(calendar_id: str, time_from: datetime, time_to: date
         elif filter[0] == "+":
             filter = filter[1:]
             type_filters[filter] = True
-    
+
     events_passed = []
     for event in events_chosen:
         if type_filters.get(event["overlapType"]):
             events_passed.append(event)
-        
+
     return events_passed
+
 
 def get_events_starting_from_now(calendar_id: Union[str, List[str]], range_offset: timedelta = timedelta(minutes=1),) -> List[Dict]:
     '''Get events starting from the time the function is called upto an offset.
@@ -215,6 +212,7 @@ def get_events_starting_from_now(calendar_id: Union[str, List[str]], range_offse
     events = get_events_in_time_span(
         calendar_id, time_from, time_to, allow_incomplete_overlaps=True, filters=["+Inside", "+OverEnd"])
     return events
+
 
 def get_user_info(credentials):
     user_info_service = build('oauth2', 'v2', credentials=credentials)

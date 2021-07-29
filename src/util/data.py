@@ -1,5 +1,5 @@
-import os
 import json
+import os
 from shutil import copyfile
 
 import toml
@@ -7,10 +7,12 @@ import toml
 settings = None
 session_data = None
 
+
 def merge_dicts(session_dict, file_dict):
     copy = session_dict.copy()
     copy.update(file_dict)  # File dict keys overwrite session dict keys
     return copy
+
 
 class DataFileInterface:
     def __init__(self):
@@ -33,9 +35,10 @@ class DataFileInterface:
     def set(self, path, value, dump=False):
         if not self.cache:
             self.load()
-        
+
         keys = path.split(".")
-        dict_keys = keys[:len(keys)-1]  # All keys except the last key leads to a dictionary
+        # All keys except the last key leads to a dictionary
+        dict_keys = keys[:len(keys)-1]
         cursor = self.cache
         for key in dict_keys:
             cursor = cursor[key]
@@ -50,6 +53,7 @@ class DataFileInterface:
 
     def dump(self):
         pass
+
 
 class DefaultingFile(DataFileInterface):
     def __init__(self, default_file=None):
@@ -66,6 +70,7 @@ class DefaultingFile(DataFileInterface):
             if alt_result:
                 result = alt_result
         return result
+
 
 class TomlFile(DefaultingFile):
     def __init__(self, active_file_path, default_file_path=None):
@@ -92,6 +97,7 @@ class TomlFile(DefaultingFile):
         with open(self.active_path, "w") as file:
             toml.dump(merged, file)
 
+
 class JsonFile(DefaultingFile):
     def __init__(self, active_file_path, default_file_path=None):
         self.active_path = active_file_path
@@ -105,7 +111,8 @@ class JsonFile(DefaultingFile):
         if os.path.exists(self.active_path):
             with open(self.active_path, "r") as file:
                 if len(file.read()) > 0:
-                    file.seek(0, 0)  # Move the cursor back from the read in the condition
+                    # Move the cursor back from the read in the condition
+                    file.seek(0, 0)
                     self.cache = json.load(file)
                 else:
                     self.cache = None

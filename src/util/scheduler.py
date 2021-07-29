@@ -1,8 +1,8 @@
 """
 Schedule tasks to run at a given time.
 """
-import threading
 import datetime as dt
+import threading
 
 
 class TaskNode:
@@ -91,7 +91,8 @@ class Scheduler:
     def _wait_for_head(self):
         task = self.head
         if task:
-            interval = (task.value["time"] - dt.datetime.now().astimezone()).total_seconds()
+            interval = (task.value["time"] -
+                        dt.datetime.now().astimezone()).total_seconds()
             # NOTE: Negative intervals execute instantly and are allowed in threading.Timer()
             self.timer = threading.Timer(
                 interval, self._wrap_action(task.value["action"]))
