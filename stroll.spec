@@ -1,4 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
+# NOTE: `pyinstaller stroll.spec ...` should be run after activating the venv to package modules appropriately 
 block_cipher = None
 
 datas = [
