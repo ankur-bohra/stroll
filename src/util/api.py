@@ -74,7 +74,7 @@ def get_service(reuse_creds: bool = True) -> Resource:
     global service, scopes
     if service is None:
         credentials: Credentials = get_creds(
-            scopes, data_folder="data", show_auth_prompt=False, reuse_creds=reuse_creds)
+            scopes, data_folder=from_root("data"), show_auth_prompt=False, reuse_creds=reuse_creds)
         service = build("calendar", "v3", credentials=credentials)
     return service
 
