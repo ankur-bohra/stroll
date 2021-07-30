@@ -255,8 +255,8 @@ if not os.path.exists(shortcut_path):
     # The TargetPath is normally the executable itself but that causes a console to pop up when launched
     # from a shortcut. Instead we use a bat file that invokes the main program and closes itself.
     # First create the bat file
-    shortcut.TargetPath = from_root("launch.bat")
-    shortcut.Arguments = "--startup"
+    shortcut.TargetPath = "wscript"
+    shortcut.Arguments = from_root("launch.vbs")
     shortcut.WorkingDirectory = from_root("")
     shortcut.IconLocation = from_root("images\\stroll.ico")
     shortcut.WindowStyle = 7

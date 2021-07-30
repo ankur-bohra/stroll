@@ -7,7 +7,7 @@ datas = [
     ('data\\client_secret.json', 'data'),
     ('data\\data.default.json', 'data'),
     ('settings.default.toml', '.'),
-    ('launch.bat', '.')
+    ('launch.vbs', '.')
 ]
 
 a = Analysis(['src\\stroll.py'],
