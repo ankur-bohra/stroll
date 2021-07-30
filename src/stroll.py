@@ -45,7 +45,7 @@ def join_event(event):
     description = event.get("description")
     pattern = re.search(REGEXP, description)
     url = f"zoommtg://zoom.us/join?action=join&confno={pattern.group(1)}&pwd={pattern.group(2)}"
-    zoom_path = settings.get("Joining.zoom-path")
+    zoom_path = settings.get("General.zoom-path")
     # NOTE: This blocks the containing directory from deletion as a side effect
     command = f"{zoom_path} --url=\"{url}\""
     os.popen(command)
