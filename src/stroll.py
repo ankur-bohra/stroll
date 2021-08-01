@@ -188,7 +188,6 @@ def get_menu_items():
 
     # First comes the current account if present
     email = data.get("email")
-    print(f"{email=}")
     if email:
         menu_items.append(Item(
             email, lambda tray_icon: tray_icon, enabled=False
@@ -217,7 +216,7 @@ def get_menu_items():
 
     menu_items.append(Menu.SEPARATOR)
     menu_items.append(Item("Quit", stop))
-    return menu_items
+    return (*menu_items,)
 
 
 def init(tray_icon):
@@ -242,7 +241,7 @@ def start():
     global tray_icon
     # Zoom start-up and login shouldn't affect prejoin period
     os.popen(settings.get("General.zoom-path"))
-    tray_menu = Menu(*get_menu_items())
+    tray_menu = Menu(get_menu_items)
     tray_icon = Icon("Stroll", ICON, menu=tray_menu)
     tray_icon.run(init)
 
