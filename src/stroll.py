@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import threading
 from datetime import datetime, time
 
 import win32com.client
@@ -52,15 +53,27 @@ def join_event(event):
 
 
 # API INTERACTION
+def attempt_auth_BLOCKING(sysTrayIcon):  # Unsafe due to reasons below
+    try:
+        creds = api.get_creds(SCOPES, show_auth_prompt=False, reuse_creds=False)
+        user_info = api.get_user_info(creds)
+        if user_info:
+            data.set("email", user_info.get("email"))
+            sysTrayIcon.notify(f"Successfully linked to {user_info.get('email')}")
+            sysTrayIcon.update_menu()
+        auto_sync()
+    except:
+        sysTrayIcon.notify("Failed to link to account")
 
-def link_account(sysTrayIcon):
-    creds = api.get_creds(SCOPES, show_auth_prompt=False, reuse_creds=False)
-    user_info = api.get_user_info(creds)
-    if user_info:
-        data.set("email", user_info.get("email"))
-        sysTrayIcon.update_menu()
-    auto_sync()
+# This function is blocking (due to run_local_server). This wouldn't be an issue if it was a
+# guarantee that the function would always terminate by timeout, but since it's not, we need
+# to use a separate thread for this function. This thread is left to hang around until the 
+# program is terminated (to avoid side effects), where it's killed forcefully.
 
+def attempt_auth(sysTrayIcon):  # non-blocking
+    thread = threading.Thread(target=attempt_auth_BLOCKING, args=(sysTrayIcon,))
+    thread.daemon = True  # If the program terminates, this thread will be terminated
+    thread.start()
 
 def get_next_event():
     global next_event
@@ -151,7 +164,8 @@ def auto_sync(sync_origin=None):
     # All sync issues resolved, proceed to actual syncing
     # Don't interact with api if no credentials are present at all
     # Don't proceed if scheduler is terminated or paused
-    if os.path.exists("data/token.json"):
+    
+    if os.path.exists(from_root("data\\token.json")):
         schedule_next_event()
         next_call = now + \
             convert_time_to_timedelta(settings.get("Syncing.period"))
@@ -168,19 +182,19 @@ def stop_joining():
 
 # MENU LIFECYCLE
 
-menu_items = []
 def get_menu_items():
-    global menu_items, settings, data
+    global settings, data
     menu_items = []
 
     # First comes the current account if present
     email = data.get("email")
+    print(f"{email=}")
     if email:
         menu_items.append(Item(
             email, lambda tray_icon: tray_icon, enabled=False
         ))
 
-    menu_items.append(Item("Link New Account", link_account))
+    menu_items.append(Item("Link New Account", attempt_auth))
 
     menu_items.append(Menu.SEPARATOR)
     menu_items.append(
@@ -234,7 +248,7 @@ def start():
 
 
 def stop(tray_icon):
-    global scheduler, data, settings, data
+    global scheduler, data, settings, auth_threads
     data.dump()
     settings.dump()
     if scheduler.active:
