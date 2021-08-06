@@ -225,13 +225,21 @@ def get_menu_items():
     menu_items.append(Item("Link New Account", attempt_auth))
 
     menu_items.append(Menu.SEPARATOR)
+    menu_items.append(Item(
+        "Auto-Join",
+        lambda tray_icon, item: settings.set(
+            "Joining.auto-join", not item.checked) or tray_icon.update_menu(),
+        checked=lambda item: settings.get("Joining.auto-join")
+    ))
+    menu_items.append(Item("Sync Next Event", lambda tray_icon: auto_sync(), enabled=settings.get("Joining.auto-join")))
+
+    menu_items.append(Menu.SEPARATOR)
     menu_items.append(
         Item("Join Previous Event", lambda tray_icon: join_previous_event()))
     menu_items.append(
         Item("Join Current Event", lambda tray_icon: join_current_event()))
     menu_items.append(
         Item("Join Next Event", lambda tray_icon: join_next_event()))
-    menu_items.append(Item("Sync Next Event", lambda tray_icon: auto_sync()))
 
     menu_items.append(Menu.SEPARATOR)
     menu_items.append(Item("Open Settings File", lambda tray_icon: os.popen(
@@ -239,13 +247,6 @@ def get_menu_items():
     ))
     menu_items.append(Item("Load Settings", lambda tray_icon: settings.load()))
 
-    menu_items.append(Menu.SEPARATOR)
-    menu_items.append(Item(
-        "Auto-Join",
-        lambda tray_icon, item: settings.set(
-            "Joining.auto-join", not item.checked),
-        checked=lambda item: settings.get("Joining.auto-join")
-    ))
 
     menu_items.append(Menu.SEPARATOR)
     menu_items.append(Item("Quit", stop))
