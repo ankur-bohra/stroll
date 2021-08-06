@@ -195,11 +195,18 @@ def get_menu_items():
     menu_items = []
 
     # First comes the current account if present
-    email = data.get("email")
-    if email:
-        menu_items.append(Item(
-            email, lambda tray_icon: tray_icon, enabled=False
-        ))
+    has_creds = os.path.exists(from_root("data\\token.json"))
+    if has_creds:
+        # First try get the current email from the credentials
+        creds = api.get_creds(SCOPES)
+        user_info = api.get_user_info(creds)
+        if user_info:
+            data.set("email", user_info.get("email"))
+        email = data.get("email")
+        if email:
+            menu_items.append(Item(
+                email, lambda tray_icon: tray_icon, enabled=False
+            ))
 
     menu_items.append(Item("Link New Account", attempt_auth))
 
@@ -265,7 +272,7 @@ def init(tray_icon):
             if len(events) > 0:
                 event = events.pop(0)
                 join_event(event)
-            
+
 
 tray_icon = None
 
