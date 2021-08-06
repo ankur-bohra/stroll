@@ -2,7 +2,7 @@ import os
 import re
 import sys
 import threading
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 
 import win32com.client
 from PIL import Image
@@ -75,9 +75,7 @@ def attempt_auth(sysTrayIcon):  # non-blocking
     thread.daemon = True  # If the program terminates, this thread will be terminated
     thread.start()
 
-def get_next_event():
-    global next_event
-
+def get_zoom_events(time_from, time_to, filters=None):
     events = []
     calendar_list = api.get_calendar_list()
     calendars_filter = settings.get("Syncing.calendars")
@@ -91,15 +89,25 @@ def get_next_event():
         calendar_id = calendar.get("id")
         range_to_sync = convert_time_to_timedelta(
             settings.get("Syncing.range-to-sync"))
-        possible_events = api.get_events_starting_from_now(
-            calendar_id, range_offset=range_to_sync)  # Random offset
+        possible_events = api.get_events_in_time_span(
+            calendar_id, time_from, time_to, 
+            allow_incomplete_overlaps=True, filters=filters or ["+Inside", "+OverStart", "+OverEnd", "+Across"]
+        )
         # Store only zoom link containing events
         for event in possible_events:
             if event.get("description") and bool(re.search(REGEXP, event.get("description"))):
                 events.append(event)
     # NOTE: Timezone conversion isn't required here (constant offset)
     events.sort(key=lambda event: datetime.fromisoformat(
-        event.get("start").get("dateTime")), reverse=True)
+        event.get("start").get("dateTime")))
+    return events
+
+def get_next_event():
+
+    range_to_sync = convert_time_to_timedelta(
+            settings.get("Syncing.range-to-sync"))
+    now = datetime.now().astimezone()
+    events = get_zoom_events(now, now+range_to_sync, filters=["+Inside", "+OverEnd"])
 
     # Since this and link_account are the only functions that interact with the API, this is the ideal
     # place to update the email id from the crendetials
@@ -110,7 +118,7 @@ def get_next_event():
         if user_info:
             data.set("email", user_info.get("email"))
             tray_icon.update_menu()
-    return len(events) > 0 and events.pop() or None
+    return len(events) > 0 and events.pop(0) or None
 
 
 def join_next_event():
@@ -233,6 +241,31 @@ def init(tray_icon):
     scheduler.start()
     auto_sync()
 
+    # Join on startup if enabled
+    has_creds = os.path.exists(from_root("data\\token.json"))
+    if has_creds:
+        join_type = settings.get("General.join-on-startup")
+        if join_type == False:
+            return
+        join_type = join_type.lower()
+        now = datetime.now().astimezone()
+        time_from = time_to = None
+        if join_type == "current":
+            time_from = now
+            time_to = now + timedelta(seconds=1)
+        elif join_type == "previous":
+            time_from = now - timedelta(days=1)
+            time_to = now
+        elif join_type == "latest":
+            time_from = now - timedelta(days=1)
+            time_to = now + timedelta(seconds=1)
+
+        if time_from and time_to:
+            events = get_zoom_events(time_from, time_to)
+            if len(events) > 0:
+                event = events.pop(0)
+                join_event(event)
+            
 
 tray_icon = None
 
@@ -278,13 +311,13 @@ if not os.path.exists(shortcut_path):
 
 # STARTUP
 is_device_startup = len(sys.argv) > 1 and sys.argv[1] == "--startup"
-autostart_type = settings.get("General.auto-start").lower()
+autostart = settings.get("General.auto-start")
 # Device startup and normal launch are the same case
-if (is_device_startup and autostart_type.lower() == "startup") or not is_device_startup:
+if (is_device_startup and autostart) or not is_device_startup:
     # Either it was device startup and it was wanted, or it has been explicitly ran
     start()
 # But if some time is specified, then actual startup has to be scheduled for the future
-elif is_device_startup and type(autostart_type) == time:
-    time_to_start = datetime.combine(datetime.today(), autostart_type)
+elif is_device_startup and type(autostart) == time:
+    time_to_start = datetime.combine(datetime.today(), autostart)
     scheduler.start()
     scheduler.add_task(time_to_start, start)

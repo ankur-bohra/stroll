@@ -1,5 +1,6 @@
 [General]
-auto-start = "Startup"
+auto-startup = true
+join-on-startup = "Current"
 update-on-startup = true
 zoom-path = "%appdata%/Zoom/bin/zoom.exe"
 
