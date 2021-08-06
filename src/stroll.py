@@ -100,14 +100,6 @@ def get_zoom_events(time_from, time_to, filters=None):
     # NOTE: Timezone conversion isn't required here (constant offset)
     events.sort(key=lambda event: datetime.fromisoformat(
         event.get("start").get("dateTime")))
-    return events
-
-def get_next_event():
-
-    range_to_sync = convert_time_to_timedelta(
-            settings.get("Syncing.range-to-sync"))
-    now = datetime.now().astimezone()
-    events = get_zoom_events(now, now+range_to_sync, filters=["+Inside", "+OverEnd"])
 
     # Since this and link_account are the only functions that interact with the API, this is the ideal
     # place to update the email id from the crendetials
@@ -118,6 +110,14 @@ def get_next_event():
         if user_info:
             data.set("email", user_info.get("email"))
             tray_icon.update_menu()
+
+    return events
+
+def get_next_event():
+    range_to_sync = convert_time_to_timedelta(
+            settings.get("Syncing.range-to-sync"))
+    now = datetime.now().astimezone()
+    events = get_zoom_events(now, now+range_to_sync, filters=["+Inside", "+OverEnd"])
     return len(events) > 0 and events.pop(0) or None
 
 
@@ -125,6 +125,20 @@ def join_next_event():
     event = get_next_event()
     if event:
         join_event(event)
+
+
+def join_previous_event():
+    now = datetime.now().astimezone()
+    events = get_zoom_events(now-timedelta(days=1), now, filters=["+OverStart", "+Inside"])
+    if len(events) > 0:
+        join_event(events.pop())  # Use the last event (most recent)
+
+
+def join_current_event():
+    now = datetime.now().astimezone()
+    events = get_zoom_events(now, now+timedelta(seconds=1))
+    if len(events) > 0:
+        join_event(events.pop(0))
 
 
 def schedule_next_event():
@@ -212,6 +226,10 @@ def get_menu_items():
 
     menu_items.append(Menu.SEPARATOR)
     menu_items.append(
+        Item("Join Previous Event", lambda tray_icon: join_previous_event()))
+    menu_items.append(
+        Item("Join Current Event", lambda tray_icon: join_current_event()))
+    menu_items.append(
         Item("Join Next Event", lambda tray_icon: join_next_event()))
     menu_items.append(Item("Sync Next Event", lambda tray_icon: auto_sync()))
 
@@ -260,9 +278,6 @@ def init(tray_icon):
         if join_type == "current":
             time_from = now
             time_to = now + timedelta(seconds=1)
-        elif join_type == "previous":
-            time_from = now - timedelta(days=1)
-            time_to = now
         elif join_type == "latest":
             time_from = now - timedelta(days=1)
             time_to = now + timedelta(seconds=1)
