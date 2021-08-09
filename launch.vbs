@@ -1,4 +1,4 @@
-Set fso = CreateObject("Scripting.FileSystemObject")
+Set fso = WScript.CreateObject("Scripting.FileSystemObject")
 
 Dim WShell
 Set WShell = CreateObject("WScript.Shell")
