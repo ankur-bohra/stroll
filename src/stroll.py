@@ -3,6 +3,7 @@ import re
 import sys
 import threading
 from datetime import datetime, time, timedelta
+import httplib2
 
 import win32com.client
 from PIL import Image
@@ -52,6 +53,23 @@ def join_event(event):
     os.popen(command)
 
 
+def notify_on_error(function, *args, **kwargs):
+    try:
+        function(*args, **kwargs)
+    except Exception as e:
+        tray_icon.notify(f"Whoa! An error occurred: {e[:200]}")
+
+
+def notify_on_ServerNotFound(function):
+    def patched(*args, **kwargs):
+        try:
+            return function(*args, **kwargs)
+        except httplib2.error.ServerNotFoundError:
+            tray_icon.notify("Device is offline, please try again when connected.")
+    return patched
+for func_name in ("get_creds", "get_user_info", "get_calendar_list", "get_events_in_time_span"):
+    setattr(api, func_name, notify_on_ServerNotFound(getattr(api, func_name)))
+
 # API INTERACTION
 def attempt_auth_BLOCKING(sysTrayIcon):  # Unsafe due to reasons below
     try:
@@ -62,8 +80,8 @@ def attempt_auth_BLOCKING(sysTrayIcon):  # Unsafe due to reasons below
             sysTrayIcon.notify(f"Successfully linked to {user_info.get('email')}")
             sysTrayIcon.update_menu()
         auto_sync()
-    except:
-        sysTrayIcon.notify("Failed to link to account")
+    except Exception as e:
+        sysTrayIcon.notify(f"Failed to link to account: {str(e)[:200]}")
 
 # This function is blocking (due to run_local_server). This wouldn't be an issue if it was a
 # guarantee that the function would always terminate by timeout, but since it's not, we need
@@ -79,6 +97,8 @@ def get_zoom_events(time_from, time_to, filters=None):
     events = []
     calendar_list = api.get_calendar_list()
     calendars_filter = settings.get("Syncing.calendars")
+    if not calendar_list:  # In case of an error
+        return []
     for calendar in calendar_list:
         # Apply calendar filter from settings
         if (calendar not in calendars_filter) and ("*" not in calendars_filter):
@@ -303,7 +323,7 @@ def start():
 
 
 def stop(tray_icon):
-    global scheduler, data, settings, auth_threads
+    global scheduler, data, settings
     data.dump()
     settings.dump()
     if scheduler.active:
@@ -334,7 +354,7 @@ if not os.path.exists(shortcut_path):
 
 # STARTUP
 is_device_startup = len(sys.argv) > 1 and sys.argv[1] == "--startup"
-autostart = settings.get("General.auto-start")
+autostart = settings.get("General.auto-startup")
 # Device startup and normal launch are the same case
 if (is_device_startup and autostart) or not is_device_startup:
     # Either it was device startup and it was wanted, or it has been explicitly ran
