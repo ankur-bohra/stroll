@@ -45,19 +45,42 @@ background = "#FFF6ED"
 background = "#FFFFFF"
 
 
-[MeetingCard]
-background = "#FFFFFF"
-hover.border = "#E8E8E8"
 
-[MeetingCard.Name]
+[Cards]
+background = "#FFFFFF"
+
+[Cards.Title]
 foreground = "#000000"
 
-[MeetingCard.JoinTime]
+
+[Cards.MeetingCard]
+hover.border = "#E8E8E8"
+
+[Cards.MeetingCard.JoinTime]
 foreground = "#939393"
 
-[MeetingCard.Link]
+[Cards.MeetingCard.Link]
 foreground = "#365CF2"
 
-[MeetingCard.Link.Icon]
+[Cards.MeetingCard.Link.Icon]
 background = "#939393"
 
+
+[Cards.SettingsCard]
+foreground = "#000000"
+
+[Cards.SettingsCard.Bullet]
+background = "#000000"
+
+[Cards.SettingsCard.Fields]
+foreground = "#000000"
+background = "#000000"
+
+[Cards.SettingsCard.Fields.Checkbox]
+foreground = "#000000"
+
+[Cards.SettingsCard.Fields.Checkbox.Check]
+background = "#707070"
+
+[Cards.SettingsCard.Fields.ComboBox]
+foreground = "#000000"

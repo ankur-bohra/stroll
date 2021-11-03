@@ -9,9 +9,9 @@ from threading import Timer
 
 from PyQt5.QtCore import QRegExp, QSize, Qt
 from PyQt5.QtGui import QColor, QFontDatabase, QIcon, QPixmap, QRegExpValidator
-from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication, QDialog,
+from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication, QCheckBox, QComboBox, QDialog,
                              QDialogButtonBox, QDoubleSpinBox, QFormLayout,
-                             QFrame, QGridLayout, QLabel, QLineEdit,
+                             QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
                              QMainWindow, QMenu, QPushButton, QScrollArea,
                              QSizePolicy, QTimeEdit, QVBoxLayout, QWidget,
                              QWidgetAction)
@@ -428,6 +428,96 @@ def createHomeScrollableArea(parent, cards=[]):
     scrollArea.show()
 
 
+def createSettingsField(parent, type, text, trigger, options=None):
+    '''Creates a container that holds all parts of a settings field.
+
+    Args:
+        parent(QWidget): The widget to parent the card to.
+        type(str): The type of the field. "Checkbox" or "Combobox",
+        text(str): The text the field starts with. Always prepended with 
+                    a bullet point. Always followed by the corresponding
+                    interactive widget.
+        trigger(function | lambda): The function to call when the field 
+                                    value changes.
+        options(tuple[str]): The options to be used in the "Combobox". 
+                            The first  option must be the default option.
+                            Ignored if the type is not "Combobox".
+
+    Returns
+        The field-container QWidget created.
+    '''
+    container = QWidget(parent)
+    layout = QHBoxLayout(container)
+    layout.setSpacing(10)
+
+    textLabel = QLabel(f"•  {text}", container, objectName="fieldText")
+    layout.addWidget(textLabel)
+
+    if type == "Checkbox":
+        field = QCheckBox(container)
+        field.stateChanged.connect(trigger)
+    elif type == "Combobox":
+        trigger, options = options, trigger  # This is a lazy overload solution
+        field = QComboBox(container)
+        field.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+        for index in range(len(options)):
+            # Initial space is for padding, trailing is to avoid clipping
+            field.insertItem(index, " "+options[index]+" ")
+    layout.addWidget(field)
+        
+
+    return container
+
+
+def createSettingsCard(parent, title, settings):
+    '''Creates a card that groups the given settings.
+
+    Cards do not truncate for any number of settings.
+
+    Args:
+        parent(QWidget): The widget to parent the card to.
+        title(str): The title for the card.
+        settings(List[dict]): The settings the card will group.
+            There is a specific format for accepting various types of settings.
+            The general format for the parameter is {field1, field2, ...}, where
+            each field is a tuple with the following format:
+                (type, text, trigger, options)
+
+                type: "Checkbox" | "Combobox",
+                    (str): The type of the field.
+                text: fieldText,
+                    (str): The text the field starts with. Always prepended with 
+                            a bullet point. Always followed by the corresponding
+                            interactive widget.
+                trigger: onFieldChange
+                    (function | lambda): The function to call when the field value changes.
+                options: (defaultOption, option2, option3, ...),
+                    (tuple[str]): The options to be used in the "Combobox". The first
+                                    option must be the default option.
+                                    Ignored if the type is not "Combobox".
+            Fields must be present in the order they are to be added.
+
+    Returns
+        The settings card created.
+    '''
+    card = QFrame(parent)
+    card.setFixedSize(743, 150)
+    card.setObjectName("settingsCard")
+
+    titleLabel = QLabel("Auto Sync", card, objectName="title")
+    titleLabel.setFixedSize(700, 32)
+    titleLabel.move(21, 18)
+
+    i = 0
+    for field in settings:
+        fieldContainer = createSettingsField(card, *field)
+        fieldContainer.move(21, 45 + 33*i)
+        i+=1
+
+    card.show()
+    return card
+
+
 def joinMeeting(id, hashed_pwd):
     '''Joins a zoom meeting using the zoom client's url protocol.
 
@@ -735,6 +825,20 @@ class StrollWindow(QMainWindow):
         self._activateSidebarButton("Calendar")
         self._clearBoard()
         self._activeBoard = "Calendar"
+
+        general = createSettingsCard(self._board, "General", {
+            ("Combobox", "Sync meetings from", ("Calendar1", "Calendar2", "Calendar3"), 
+                lambda: print("Edited")),
+            ("Checkbox", "Use event names as meeting names", lambda: print("Edited")),
+        })
+        general.move(25, 50)
+
+        autoSync = createSettingsCard(self._board, "General", {
+            ("Combobox", "Sync meetings every", ("Calendar1", "Calendar2", "Calendar3"), 
+                lambda: print("Edited")),
+            ("Checkbox", "Use event names as meeting names", lambda: print("Edited")),
+        })
+        autoSync.move(25, 250)        
 
     def _showCreationPrompt(self):
         dialog = createMultiInputDialog(

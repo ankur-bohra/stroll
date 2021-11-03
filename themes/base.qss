@@ -56,25 +56,25 @@ QScrollArea {
 
 #meetingCard {
     border-radius: 16px;
-    background-color: $MeetingCard.background;
+    background-color: $Cards.background;
 }
-#meetingCard:hover {border: 1px solid $MeetingCard.hover.border}
+#meetingCard:hover {border: 1px solid $Cards.MeetingCard.hover.border}
 #meetingCard > #name {
     font-family: "Segoe UI Bold";
     font-weight: 600;
     font-size: 31px;
-    color: $MeetingCard.Name.foreground;
+    color: $Cards.Title.foreground;
 }
 #meetingCard > #joinTime {
     font-family: "Segoe UI Bold";
     font-weight: 600;
     font-size: 18px;
-    color: $MeetingCard.JoinTime.foreground
+    color: $Cards.MeetingCard.JoinTime.foreground
 }
 #meetingCard > #link {
     font-family: "Segoe UI";
     font-size: 18px;
-    color: $MeetingCard.Link.foreground;
+    color: $Cards.MeetingCard.Link.foreground;
 }
 
 QScrollBar:vertical {
@@ -93,4 +93,43 @@ QScrollBar::add-line, QScrollBar::add-page, QScrollBar::sub-line, QScrollBar::su
     height: 0px;
     width: 0px;
     background: none
+}
+
+#settingsCard {
+    border-radius: 16px;
+    background-color: $Cards.background;
+    /* foreground: $Cards.SettingsCard.foreground; */
+}
+
+#settingsCard > #title {
+    font-family: "Segoe UI Bold";
+    font-weight: 600;
+    font-size: 26px;
+    color: $Cards.Title.foreground;
+}
+
+#settingsCard #bullet {
+    background-color: $Cards.SettingsCard.Bullet.background;
+}
+
+#settingsCard QLabel {
+    font-family: "Segoe UI";
+    font-size: 19px;
+    color: $Cards.SettingsCard.Fields.foreground;
+} 
+
+#settingsCard QCheckBox {
+    font-family: "Segoe UI";
+    spacing: 0px;
+}
+
+#settingsCard QCheckBox::down-arrow {
+    shadow: plain;
+}
+
+#settingsCard QComboBox {
+    font-family: "Segoe UI";
+    border: 1px solid black;
+    spacing: 10px;
+    color: $Cards.SettingsCard.Fields.ComboBox.foreground;
 }
